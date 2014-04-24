@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+require "dle"
+Dle::Application.dispatch(ENV, ARGV)

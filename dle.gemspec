@@ -8,9 +8,9 @@ Gem::Specification.new do |spec|
   spec.version       = Dle::VERSION
   spec.authors       = ["Sven Pachnit"]
   spec.email         = ["sven@bmonkeys.net"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
-  spec.homepage      = ""
+  spec.summary       = %q{Directory List Edit – Edit file structures in your favorite editor!}
+  spec.description   = %q{You can move, rename, chmod, chown or remove individual files or directories with your favorite text editor.}
+  spec.homepage      = "https://github.com/2called-chaos/dle"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
+  spec.add_development_dependency "pry"
   spec.add_development_dependency "bundler", "~> 1.5"
   spec.add_development_dependency "rake"
 end
