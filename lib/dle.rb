@@ -3,8 +3,10 @@ require "yaml"
 require "find"
 require "optparse"
 require "securerandom"
+require "ostruct"
+require "tempfile"
+begin ; require "pry" ; rescue LoadError ; end
 
-require "pry"
 require "active_support/core_ext/object/blank"
 require "active_support/core_ext/object/try"
 
