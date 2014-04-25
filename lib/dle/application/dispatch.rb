@@ -89,6 +89,8 @@ module Dle
                 sleep 1
               end
             end
+            @fs.reindex!
+            @fs.opts[:verbose] = false
           end
 
           # index

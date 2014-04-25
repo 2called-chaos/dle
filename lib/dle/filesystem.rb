@@ -23,7 +23,7 @@ module Dle
     def initialize base_dir, opts = {}
       raise ArgumentError, "#{base_dir} is not a directory" unless FileTest.directory?(base_dir)
       @base_dir = File.expand_path(base_dir).freeze
-      @opts = { dotfiles: true }.merge(opts)
+      @opts = { dotfiles: true, verbose: true }.merge(opts)
       @index = {}
     end
 
@@ -103,7 +103,13 @@ module Dle
   protected
 
     def index_node path
-      Node.new(self, path).tap{|node| @index[node.inode] = node }
+      begin
+        Node.new(self, path).tap{|node| @index[node.inode] = node }
+      rescue Errno::EPERM
+        warn "Operation not permitted - #{path}" if @opts[:verbose]
+      rescue Errno::ENOENT
+        warn "No such file or directory (broken symlink?) - #{path}" if @opts[:verbose]
+      end
     end
   end
 end
