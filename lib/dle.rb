@@ -21,4 +21,5 @@ require "dle/application"
 
 module Dle
   ROOT = Pathname.new(File.expand_path("../..", __FILE__))
+  BASH_ENABLED = "#{ENV["SHELL"]}".downcase["bash"]
 end

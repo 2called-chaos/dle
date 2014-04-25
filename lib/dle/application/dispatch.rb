@@ -78,8 +78,27 @@ module Dle
 
         # index filesystem
         log("index #{c base_dir, :magenta}")
-        @fs = Filesystem.new(base_dir, dotfiles: @opts[:dotfiles])
+        logger.ensure_prefix c("[index]\t", :magenta) do
+          @fs = Filesystem.new(base_dir, dotfiles: @opts[:dotfiles])
+
+          # notifier
+          if BASH_ENABLED
+            notifier = Thread.new do
+              loop do
+                logger.raw("\033]0;#{@fs.index.count} nodes indexed\007", :print)
+                sleep 1
+              end
+            end
+          end
+
+          # index
+          @fs.reindex!
+
+          # kill thread
+          notifier.kill if BASH_ENABLED
+        end
         abort("Base directory is empty or not readable", 1) if @fs.index.empty?
+        log("indexed #{c "#{@fs.index.count} nodes", :magenta}") if @fs.index.count > 1000
 
         file = "#{Dir.tmpdir}/#{SecureRandom.urlsafe_base64}"
         begin
@@ -138,12 +157,18 @@ module Dle
 
         # apply changes
         log "#{@opts[:simulate] ? "Simulating" : "Applying"} changes..."
-        @delta.each do |action, snodes|
-          logger.ensure_prefix c("[apply-#{action}]\t", :magenta) do
-            snodes.each do |snode|
-              Filesystem::Destructive.new(self, action, @fs, snode).perform
+        actions_performed = 0
+        begin
+          @delta.each do |action, snodes|
+            logger.ensure_prefix c("[apply-#{action}]\t", :magenta) do
+              snodes.each do |snode|
+                actions_performed += 1
+                Filesystem::Destructive.new(self, action, @fs, snode).perform
+              end
             end
           end
+        ensure
+          log "#{@opts[:simulate] ? "Simulated" : "Peformed"} #{actions_performed} changes..." unless @opts[:simulate]
         end
       end
     end

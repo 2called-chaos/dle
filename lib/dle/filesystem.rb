@@ -24,7 +24,7 @@ module Dle
       raise ArgumentError, "#{base_dir} is not a directory" unless FileTest.directory?(base_dir)
       @base_dir = File.expand_path(base_dir).freeze
       @opts = { dotfiles: true }.merge(opts)
-      reindex!
+      @index = {}
     end
 
     def reindex!
