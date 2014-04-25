@@ -63,32 +63,38 @@ module Dle
         logger.ensure_prefix c("[dFS]\t", :magenta) do
           log "HD-BASE is " << c(dlfile[:HD_BASE], :magenta)
           dlfile.each do |ino, snode|
-            next if ino == :HD_BASE || ino == :HD_DOTFILES
-            node = @index[ino]
-            unless node
-              warn("INODE " << c(ino, :magenta) << c(" not found, ignore...", :red))
-              next
-            end
+            begin
+              next if ino == :HD_BASE || ino == :HD_DOTFILES
+              node = @index[ino]
+              unless node
+                warn("INODE " << c(ino, :magenta) << c(" not found, ignore...", :red))
+                next
+              end
 
-            # flagged for removal
-            if %w[del delr delf delrf].include?(snode.mode)
-              r[:rm] << Softnode.new(node: node, snode: snode, is: node.relative_path)
-              next
-            end
+              # flagged for removal
+              if %w[del delr delf delrf].include?(snode.mode)
+                r[:rm] << Softnode.new(node: node, snode: snode, is: node.relative_path)
+                next
+              end
 
-            # mode changed
-            if "#{snode.mode}".present? && "#{snode.mode}" != "cp" && "#{node.mode}" != "#{snode.mode}"
-              r[:chmod] << Softnode.new(node: node, snode: snode, is: node.mode, should: snode.mode)
-            end
+              # mode changed
+              if "#{snode.mode}".present? && "#{snode.mode}" != "cp" && "#{node.mode}" != "#{snode.mode}"
+                r[:chmod] << Softnode.new(node: node, snode: snode, is: node.mode, should: snode.mode)
+              end
 
-            # uid/gid changed
-            if "#{node.owngrp}" != "#{snode.uid}:#{snode.gid}"
-              r[:chown] << Softnode.new(node: node, snode: snode, is: node.owngrp, should: "#{snode.uid}:#{snode.gid}")
-            end
+              # uid/gid changed
+              if "#{node.owngrp}" != "#{snode.uid}:#{snode.gid}"
+                r[:chown] << Softnode.new(node: node, snode: snode, is: node.owngrp, should: "#{snode.uid}:#{snode.gid}")
+              end
 
-            # path changed
-            if "#{node.relative_path}" != "#{snode.relative_path}"
-              r[snode.mode == "cp" ? :cp : :mv] << Softnode.new(node: node, snode: snode, is: node.relative_path, should: snode.relative_path)
+              # path changed
+              if "#{node.relative_path}" != "#{snode.relative_path}"
+                r[snode.mode == "cp" ? :cp : :mv] << Softnode.new(node: node, snode: snode, is: node.relative_path, should: snode.relative_path)
+              end
+            rescue Errno::EPERM
+              warn "Operation not permitted - #{snode.relative_path}" if @opts[:verbose]
+            rescue Errno::ENOENT
+              warn "No such file or directory - #{snode.relative_path}" if @opts[:verbose]
             end
           end
         end

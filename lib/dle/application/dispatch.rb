@@ -88,7 +88,6 @@ module Dle
             end
           end.perform do
             @fs.reindex!
-            @fs.opts[:verbose] = false
           end
         end
         abort("Base directory is empty or not readable", 1) if @fs.index.empty?
@@ -158,6 +157,7 @@ module Dle
 
         # apply changes
         log "#{@opts[:simulate] ? "Simulating" : "Applying"} changes..."
+        @fs.opts[:verbose] = false
         total_actions = @delta.map{|_, nodes| nodes.count }.inject(&:+)
         actions_performed = 0
         begin
