@@ -69,7 +69,7 @@ module Dle
         base_dir = ARGV[0].present? ? File.expand_path(ARGV[0].to_s) : ARGV[0].to_s
         if !FileTest.directory?(base_dir)
           if base_dir.present?
-            abort c(ARGV[0].to_s, :magenta) << c(" is not a valid directory!", :red)
+            abort c(ARGV[0].to_s, :magenta) << c(" is not a valid directory!", :red), 1
           else
             dispatch(:help)
             abort "Please provide a base directory.", 1
