@@ -8,6 +8,7 @@ module Dle
   class Application
     attr_reader :opts
     include Dispatch
+    include Helpers
 
     # =========
     # = Setup =
@@ -16,7 +17,11 @@ module Dle
       new(*a) do |app|
         app.parse_params
         app.log "core ready"
-        app.dispatch
+        begin
+          app.dispatch
+        rescue Interrupt
+          app.abort("Interrupted", 1)
+        end
       end
     end
 

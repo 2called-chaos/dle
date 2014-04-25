@@ -12,6 +12,25 @@ module Dle
       ((s > 9 || s.modulo(1) < 0.1 ? '%d' : '%.1f') % s) + ' ' + BYTE_UNITS[i]
     end
 
+    def human_number(n)
+      n.to_s.reverse.gsub(/...(?=.)/,'\&,').reverse
+    end
+
+    def notifier &block
+      OpenStruct.new.tap do |o|
+        o.callback = block
+
+        def o.perform &block
+          t = Thread.new(&callback)
+          begin
+            block.call(t)
+          ensure
+            t.kill
+          end
+        end
+      end
+    end
+
     def render_table table, headers = []
       [].tap do |r|
         col_sizes = table.map{|col| col.map(&:to_s).map(&:length).max }

@@ -81,26 +81,18 @@ module Dle
         logger.ensure_prefix c("[index]\t", :magenta) do
           @fs = Filesystem.new(base_dir, dotfiles: @opts[:dotfiles])
 
-          # notifier
-          if BASH_ENABLED
-            notifier = Thread.new do
-              loop do
-                logger.raw("\033]0;#{@fs.index.count} nodes indexed\007", :print)
-                sleep 1
-              end
+          notifier do
+            loop do
+              logger.raw("\033]0;#{human_number @fs.index.count} nodes indexed\007", :print) if BASH_ENABLED
+              sleep 1
             end
+          end.perform do
             @fs.reindex!
             @fs.opts[:verbose] = false
           end
-
-          # index
-          @fs.reindex!
-
-          # kill thread
-          notifier.kill if BASH_ENABLED
         end
         abort("Base directory is empty or not readable", 1) if @fs.index.empty?
-        log("indexed #{c "#{@fs.index.count} nodes", :magenta}") if @fs.index.count > 1000
+        log("indexed #{c "#{human_number @fs.index.count} nodes", :magenta}") if @fs.index.count > 1000
 
         file = "#{Dir.tmpdir}/#{SecureRandom.urlsafe_base64}"
         begin
@@ -108,6 +100,7 @@ module Dle
           if @opts[:input_file]
             ifile = File.expand_path(@opts[:input_file])
             if FileTest.file?(ifile) && FileTest.readable?(ifile)
+              log "processing file..."
               @dlfile = DlFile.parse(ifile)
             else
               abort "Input file not readable: " << c(ifile, :magenta)
@@ -115,10 +108,16 @@ module Dle
           else
             FileUtils.mkdir_p(File.dirname(file)) if !FileTest.exist?(File.dirname(file))
             if !FileTest.exist?(file) || File.read(file).strip.empty?
-              File.open(file, "w") {|f| f.write @fs.to_dlfile }
+              notifier do
+                sleep 3
+                log "writing result list to file..."
+              end.perform do
+                File.open(file, "w") {|f| f.write @fs.to_dlfile }
+              end
             end
             log "open list for editing..."
             open_editor(file)
+            log "processing file..."
             @dlfile = DlFile.parse(file)
           end
 
@@ -159,18 +158,28 @@ module Dle
 
         # apply changes
         log "#{@opts[:simulate] ? "Simulating" : "Applying"} changes..."
+        total_actions = @delta.map{|_, nodes| nodes.count }.inject(&:+)
         actions_performed = 0
         begin
-          @delta.each do |action, snodes|
-            logger.ensure_prefix c("[apply-#{action}]\t", :magenta) do
-              snodes.each do |snode|
-                actions_performed += 1
-                Filesystem::Destructive.new(self, action, @fs, snode).perform
+          notifier do
+            loop do
+              if BASH_ENABLED
+                logger.raw("\033]0;#{@opts[:simulate] ? "Simulated" : "Peformed"} #{human_number actions_performed}/#{human_number total_actions} changes\007", :print)
+              end
+              sleep 1
+            end
+          end.perform do
+            @delta.each do |action, snodes|
+              logger.ensure_prefix c("[apply-#{action}]\t", :magenta) do
+                snodes.each do |snode|
+                  actions_performed += 1
+                  Filesystem::Destructive.new(self, action, @fs, snode).perform
+                end
               end
             end
           end
         ensure
-          log "#{@opts[:simulate] ? "Simulated" : "Peformed"} #{actions_performed} changes..." unless @opts[:simulate]
+          log "#{@opts[:simulate] ? "Simulated" : "Peformed"} #{human_number actions_performed} changes..."
         end
       end
     end
