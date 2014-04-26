@@ -14,11 +14,13 @@ module Dle
       end
 
       def dispatch_help
-        @optparse.to_s.split("\n").each(&method(:log))
-        log ""
-        log "To set your favorite editor set the env variable #{c "DLE_EDITOR", :magenta}"
-        log "Note that you need a blocking call (e.g. subl -w, mate -w)"
-        log "Your current editor is: #{c @editor || "none", :magenta}"
+        logger.log_without_timestr do
+          @optparse.to_s.split("\n").each(&method(:log))
+          log ""
+          log "To set your favorite editor set the env variable #{c "DLE_EDITOR", :magenta}"
+          log "Note that you need a blocking call (e.g. subl -w, mate -w)"
+          log "Your current editor is: #{c @editor || "none", :magenta}"
+        end
       end
 
       def dispatch_info

@@ -16,7 +16,7 @@ module Dle
     def self.dispatch *a
       new(*a) do |app|
         app.parse_params
-        app.log "core ready"
+        app.logger
         begin
           app.dispatch
         rescue Interrupt
