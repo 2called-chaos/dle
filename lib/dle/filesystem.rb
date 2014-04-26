@@ -22,7 +22,8 @@ module Dle
 
     def initialize base_dir, opts = {}
       raise ArgumentError, "#{base_dir} is not a directory" unless FileTest.directory?(base_dir)
-      @base_dir = File.expand_path(base_dir).freeze
+      @base_dir = base_dir.encode('UTF-8','UTF-8-MAC') if RUBY_PLATFORM.downcase["darwin"]
+      @base_dir = File.expand_path(@base_dir || base_dir).freeze
       @opts = { dotfiles: true, verbose: true }.merge(opts)
       @opts[:pattern] = Regexp.new(@opts[:pattern]) unless ["dirs", "files", ""].include?(@opts[:pattern].to_s)
       @index = {}
