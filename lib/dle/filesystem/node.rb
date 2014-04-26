@@ -6,6 +6,7 @@ module Dle
       def initialize fs, path
         @fs = fs
         @path = path
+        @path = @path.encode('UTF-8','UTF-8-MAC') if RUBY_PLATFORM.downcase["darwin"]
       end
 
       def relative_path
