@@ -79,7 +79,7 @@ module Dle
         # index filesystem
         log("index #{c base_dir, :magenta}")
         logger.ensure_prefix c("[index]\t", :magenta) do
-          @fs = Filesystem.new(base_dir, dotfiles: @opts[:dotfiles])
+          @fs = Filesystem.new(base_dir, dotfiles: @opts[:dotfiles], pattern: @opts[:pattern])
 
           notifier do
             loop do

@@ -24,6 +24,7 @@ module Dle
       raise ArgumentError, "#{base_dir} is not a directory" unless FileTest.directory?(base_dir)
       @base_dir = File.expand_path(base_dir).freeze
       @opts = { dotfiles: true, verbose: true }.merge(opts)
+      @opts[:pattern] = Regexp.new(@opts[:pattern]) unless ["dirs", "files", ""].include?(@opts[:pattern].to_s)
       @index = {}
     end
 
@@ -34,6 +35,10 @@ module Dle
 
     def index!
       Find.find(@base_dir) do |path|
+        next if @opts[:pattern] == "files" && !FileTest.file?(path)
+        next if @opts[:pattern] == "dirs" && !FileTest.directory?(path)
+        next if @opts[:pattern].is_a?(Regexp) && !path.match(@opts[:pattern])
+
         if File.basename(path)[0] == ?. && !@opts[:dotfiles]
           Find.prune
         else

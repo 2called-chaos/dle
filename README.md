@@ -32,6 +32,8 @@ To get a list of available options invoke DLE with the `--help` or `-h` option:
         -r, --skip-review                Skip review changes before applying
         -s, --simulate                   Don't apply changes, show commands instead
         -f, --file DLFILE                Use input file (be careful)
+        -o, --only pattern               files, dirs or regexp (without delimiters)
+                                           e.g.: dle ~/Movies -o "(mov|mkv|avi)$"
         -m, --monochrome                 Don't colorize output
         -h, --help                       Shows this help
         -v, --version                    Shows version and other info

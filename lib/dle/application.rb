@@ -46,6 +46,7 @@ module Dle
         opts.on("-r", "--skip-review", "Skip review changes before applying") { @opts[:review] = false }
         opts.on("-s", "--simulate", "Don't apply changes, show commands instead") { @opts[:simulate] = true ; @opts[:review] = false }
         opts.on("-f", "--file DLFILE", "Use input file (be careful)") {|f| @opts[:input_file] = f }
+        opts.on("-o", "--only pattern", c("files", :blue) << c(", ") << c("dirs", :blue) << c(" or regexp (without delimiters)"), "  e.g.:" << c(%{ dle ~/Movies -o "(mov|mkv|avi)$"}, :blue)) {|p| @opts[:pattern] = p }
         opts.on("-m", "--monochrome", "Don't colorize output") { logger.colorize = false }
         opts.on("-h", "--help", "Shows this help") { @opts[:dispatch] = :help }
         opts.on("-v", "--version", "Shows version and other info") { @opts[:dispatch] = :info }
