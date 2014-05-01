@@ -36,13 +36,12 @@ module Dle
 
     def index!
       Find.find(@base_dir) do |path|
-        next if @opts[:pattern] == "files" && !FileTest.file?(path)
-        next if @opts[:pattern] == "dirs" && !FileTest.directory?(path)
-        next if @opts[:pattern].is_a?(Regexp) && !path.match(@opts[:pattern])
-
         if File.basename(path)[0] == ?. && !@opts[:dotfiles]
           Find.prune
         else
+          next if @opts[:pattern] == "files" && !FileTest.file?(path)
+          next if @opts[:pattern] == "dirs" && !FileTest.directory?(path)
+          next if @opts[:pattern].is_a?(Regexp) && !path.match(@opts[:pattern])
           index_node(path)
         end
       end
