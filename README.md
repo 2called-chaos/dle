@@ -9,7 +9,7 @@ You can copy, move, rename, chmod, chown or remove individual files or directori
 
 ## Requirements
 
-You will need a UNIX system with a working Ruby installation, sorry Windozer!
+You will need a UNIX system with a working Ruby (>= 1.9.3) installation, sorry Windozer!
 
 ## Installation
 
