@@ -1,3 +1,4 @@
+# Encoding: Utf-8
 module Dle
   class Application
     module Dispatch
