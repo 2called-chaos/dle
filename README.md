@@ -5,7 +5,8 @@ You can copy, move, rename, chmod, chown or remove individual files or directori
 
 **BETA product, use at your own risk, use `--simulate` to be sure, always have a backup!**
 
-**[» See it in action!](https://www.youtube.com/watch?v=-xfnx3VQvNQ)**
+[![YouTube](http://img.youtube.com/vi/-xfnx3VQvNQ/mqdefault.jpg)](https://www.youtube.com/watch?v=-xfnx3VQvNQ)
+**[▶ See it in action](https://www.youtube.com/watch?v=-xfnx3VQvNQ)**
 
 ## Requirements
 
