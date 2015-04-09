@@ -30,6 +30,7 @@ module Dle
       @editor = which_editor
       @opts = {
         dispatch: :index,
+        console: false,
         dotfiles: false,
         check_for_updates: true,
         review: true,
@@ -51,6 +52,7 @@ module Dle
         opts.on("-h", "--help", "Shows this help") { @opts[:dispatch] = :help }
         opts.on("-v", "--version", "Shows version and other info") { @opts[:dispatch] = :info }
         opts.on("-z", "Do not check for updates on GitHub (with -v/--version)") { @opts[:check_for_updates] = false }
+        opts.on("--console", "Start console to play around with the collection (requires pry)") {|f| @opts[:console] = true }
       end
 
       begin

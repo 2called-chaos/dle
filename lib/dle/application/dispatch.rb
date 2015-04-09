@@ -96,93 +96,106 @@ module Dle
         abort("Base directory is empty or not readable", 1) if @fs.index.empty?
         log("indexed #{c "#{human_number @fs.index.count} nodes", :magenta}") if @fs.index.count > 1000
 
-        file = "#{Dir.tmpdir}/#{SecureRandom.urlsafe_base64}"
-        begin
-          # read input file or open editor
-          if @opts[:input_file]
-            ifile = File.expand_path(@opts[:input_file])
-            if FileTest.file?(ifile) && FileTest.readable?(ifile)
-              log "processing file..."
-              @dlfile = DlFile.parse(ifile)
-            else
-              abort "Input file not readable: " << c(ifile, :magenta)
-            end
-          else
-            FileUtils.mkdir_p(File.dirname(file)) if !FileTest.exist?(File.dirname(file))
-            if !FileTest.exist?(file) || File.read(file).strip.empty?
-              notifier do
-                sleep 3
-                log "writing result list to file..."
-              end.perform do
-                File.open(file, "w") {|f| f.write @fs.to_dlfile }
-              end
-            end
-            log "open list for editing..."
-            open_editor(file)
-            log "processing file..."
-            @dlfile = DlFile.parse(file)
-          end
-
-          # delta changes
-          @delta = @fs.delta(@dlfile)
-
-          # no changes
-          if @delta.all?{|_, v| v.empty? }
+        if @opts[:console]
+          log "You have access to the collection with " << c("@fs", :magenta)
+          log "Apply existent select script with " << c("apply_filter(@fs, 'filter_name')", :magenta)
+          log "Type " << c("exit", :magenta) << c(" to leave the console.")
+          begin
+            binding.pry(quiet: true)
             abort c("No changes, nothing to do..."), 0
+          rescue NoMethodError => ex
+            raise ex unless ex.message["undefined method `pry'"]
+            abort c("The pry gem is required to display the console. Please install it: " << c("gem install pry", :blue)), 3
+          end
+        else
+          file = "#{Dir.tmpdir}/#{SecureRandom.urlsafe_base64}"
+          begin
+            # read input file or open editor
+            if @opts[:input_file]
+              ifile = File.expand_path(@opts[:input_file])
+              if FileTest.file?(ifile) && FileTest.readable?(ifile)
+                log "processing file..."
+                @dlfile = DlFile.parse(ifile)
+              else
+                abort "Input file not readable: " << c(ifile, :magenta)
+              end
+            else
+              FileUtils.mkdir_p(File.dirname(file)) if !FileTest.exist?(File.dirname(file))
+              if !FileTest.exist?(file) || File.read(file).strip.empty?
+                notifier do
+                  sleep 3
+                  log "writing result list to file..."
+                end.perform do
+                  File.open(file, "w") {|f| f.write @fs.to_dlfile }
+                end
+              end
+              log "open list for editing..."
+              open_editor(file)
+              log "processing file..."
+              @dlfile = DlFile.parse(file)
+            end
+
+            # delta changes
+            @delta = @fs.delta(@dlfile)
+
+            # no changes
+            if @delta.all?{|_, v| v.empty? }
+              abort c("No changes, nothing to do..."), 0
+            end
+
+            # review
+            if @opts[:review]
+              @delta.each do |action, snodes|
+                logger.ensure_prefix c("[#{action}]\t", :magenta) do
+                  snodes.each do |snode|
+                    if [:chown, :chmod].include?(action)
+                      log(c("#{snode.node.relative_path} ", :blue) << c(snode.is, :red) << c(" » ") << c(snode.should, :green))
+                    elsif [:cp, :mv].include?(action)
+                      log(c(snode.is, :red) << c(" » ") << c(snode.should, :green))
+                    else
+                      log(c(snode.is, :red) << " (#{snode.snode.mode})")
+                    end
+                  end
+                end
+              end
+
+              answer = ask("Do you want to apply these changes? [yes/no/edit]")
+              while !["y", "yes", "n", "no", "e", "edit"].include?(answer.downcase)
+                answer = ask("Please be explicit, yes/no/edit:")
+              end
+              raise "retry" if ["e", "edit"].include?(answer.downcase)
+              abort("Aborted, nothing changed", 0) if !["y", "yes"].include?(answer.downcase)
+            end
+          rescue
+            $!.message == "retry" ? retry : raise
           end
 
-          # review
-          if @opts[:review]
-            @delta.each do |action, snodes|
-              logger.ensure_prefix c("[#{action}]\t", :magenta) do
-                snodes.each do |snode|
-                  if [:chown, :chmod].include?(action)
-                    log(c("#{snode.node.relative_path} ", :blue) << c(snode.is, :red) << c(" » ") << c(snode.should, :green))
-                  elsif [:cp, :mv].include?(action)
-                    log(c(snode.is, :red) << c(" » ") << c(snode.should, :green))
-                  else
-                    log(c(snode.is, :red) << " (#{snode.snode.mode})")
+          # apply changes
+          log "#{@opts[:simulate] ? "Simulating" : "Applying"} changes..."
+          @fs.opts[:verbose] = false
+          total_actions = @delta.map{|_, nodes| nodes.count }.inject(&:+)
+          actions_performed = 0
+          begin
+            notifier do
+              loop do
+                if BASH_ENABLED
+                  logger.raw("\033]0;#{@opts[:simulate] ? "Simulated" : "Peformed"} #{human_number actions_performed}/#{human_number total_actions} changes\007", :print)
+                end
+                sleep 1
+              end
+            end.perform do
+              @delta.each do |action, snodes|
+                logger.ensure_prefix c("[apply-#{action}]\t", :magenta) do
+                  snodes.each do |snode|
+                    actions_performed += 1
+                    Filesystem::Destructive.new(self, action, @fs, snode).perform
                   end
                 end
               end
             end
-
-            answer = ask("Do you want to apply these changes? [yes/no/edit]")
-            while !["y", "yes", "n", "no", "e", "edit"].include?(answer.downcase)
-              answer = ask("Please be explicit, yes/no/edit:")
-            end
-            raise "retry" if ["e", "edit"].include?(answer.downcase)
-            abort("Aborted, nothing changed", 0) if !["y", "yes"].include?(answer.downcase)
+          ensure
+            log "#{@opts[:simulate] ? "Simulated" : "Peformed"} #{human_number actions_performed} changes..."
           end
-        rescue
-          $!.message == "retry" ? retry : raise
-        end
-
-        # apply changes
-        log "#{@opts[:simulate] ? "Simulating" : "Applying"} changes..."
-        @fs.opts[:verbose] = false
-        total_actions = @delta.map{|_, nodes| nodes.count }.inject(&:+)
-        actions_performed = 0
-        begin
-          notifier do
-            loop do
-              if BASH_ENABLED
-                logger.raw("\033]0;#{@opts[:simulate] ? "Simulated" : "Peformed"} #{human_number actions_performed}/#{human_number total_actions} changes\007", :print)
-              end
-              sleep 1
-            end
-          end.perform do
-            @delta.each do |action, snodes|
-              logger.ensure_prefix c("[apply-#{action}]\t", :magenta) do
-                snodes.each do |snode|
-                  actions_performed += 1
-                  Filesystem::Destructive.new(self, action, @fs, snode).perform
-                end
-              end
-            end
-          end
-        ensure
-          log "#{@opts[:simulate] ? "Simulated" : "Peformed"} #{human_number actions_performed} changes..."
         end
       end
     end
