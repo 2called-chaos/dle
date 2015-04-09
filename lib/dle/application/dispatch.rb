@@ -14,6 +14,12 @@ module Dle
         end
       end
 
+      def dispatch_edit_script
+        log("Opening file in editor...")
+        f = record_filter(filter_script(@opts[:select_script]))
+        log("Saved file " << c(f, :magenta))
+      end
+
       def dispatch_help
         logger.log_without_timestr do
           @optparse.to_s.split("\n").each(&method(:log))
@@ -120,6 +126,21 @@ module Dle
                 abort "Input file not readable: " << c(ifile, :magenta)
               end
             else
+              old_count = @fs.index.count
+              if @opts[:query]
+                apply_filter(@fs, record_filter)
+                collection_size_changed old_count, @fs.index.count, "custom filter"
+                old_count = @fs.index.count
+              end
+
+              # filter
+              (@opts[:select_scripts] || []).each do |filter|
+                apply_filter(@fs, filter_script(filter))
+                collection_size_changed old_count, @fs.index.count, "filter: #{filter}"
+                old_count = @fs.index.count
+              end
+
+              # save file
               FileUtils.mkdir_p(File.dirname(file)) if !FileTest.exist?(File.dirname(file))
               if !FileTest.exist?(file) || File.read(file).strip.empty?
                 notifier do
@@ -129,6 +150,8 @@ module Dle
                   File.open(file, "w") {|f| f.write @fs.to_dlfile }
                 end
               end
+
+              # open editor
               log "open list for editing..."
               open_editor(file)
               log "processing file..."

@@ -18,6 +18,7 @@ require "dle/filesystem/destructive"
 require "dle/filesystem/softnode"
 require "dle/filesystem/node"
 require "dle/filesystem"
+require "dle/application/filter"
 require "dle/application/dispatch"
 require "dle/application"
 

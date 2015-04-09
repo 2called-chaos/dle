@@ -35,7 +35,7 @@ module Dle
       [].tap do |r|
         col_sizes = table.map{|col| col.map(&:to_s).map(&:length).max }
         headers.map(&:length).each_with_index do |length, header|
-          col_sizes[header] = [col_sizes[header], length].max
+          col_sizes[header] = [col_sizes[header] || 0, length || 0].max
         end
 
         # header

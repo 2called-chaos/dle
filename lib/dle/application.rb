@@ -8,6 +8,7 @@ module Dle
   class Application
     attr_reader :opts
     include Dispatch
+    include Filter
     include Helpers
 
     # =========
@@ -34,20 +35,38 @@ module Dle
         dotfiles: false,
         check_for_updates: true,
         review: true,
+        select_scripts: false,
         simulate: false,
+        query: false,
       }
       yield(self)
+    end
+
+    def collection_size_changed cold, cnew, reason = nil
+      if cold != cnew
+        log(
+          "We have filtered " << c("#{cnew}", :magenta) <<
+          c(" nodes") << c(" (#{cnew - cold})", :red) <<
+          c(" from originally ") << c("#{cold}", :magenta) <<
+          (reason ? c(" (#{reason})", :blue) : "")
+        )
+      end
     end
 
     def parse_params
       @optparse = OptionParser.new do |opts|
         opts.banner = "Usage: dle [options] base_directory"
 
+        opts.separator(c "# Application options", :blue)
         opts.on("-d", "--dotfiles", "Include dotfiles (unix invisible)") { @opts[:dotfiles] = true }
         opts.on("-r", "--skip-review", "Skip review changes before applying") { @opts[:review] = false }
         opts.on("-s", "--simulate", "Don't apply changes, show commands instead") { @opts[:simulate] = true ; @opts[:review] = false }
         opts.on("-f", "--file DLFILE", "Use input file (be careful)") {|f| @opts[:input_file] = f }
         opts.on("-o", "--only pattern", c("files", :blue) << c(", ") << c("dirs", :blue) << c(" or regexp (without delimiters)"), "  e.g.:" << c(%{ dle ~/Movies -o "(mov|mkv|avi)$"}, :blue)) {|p| @opts[:pattern] = p }
+        opts.on("-a", "--apply NAMED,FILTERS", Array, "Filter collection with saved filters") {|s| @opts[:select_scripts] = s }
+        opts.on("-q", "--query", "Filter collection with ruby code") { @opts[:query] = true }
+        opts.on("-e", "--edit FILTER", "Edit/create filter scripts") {|s| @opts[:dispatch] = :edit_script; @opts[:select_script] = s }
+        opts.separator("\n" << c("# General options", :blue))
         opts.on("-m", "--monochrome", "Don't colorize output") { logger.colorize = false }
         opts.on("-h", "--help", "Shows this help") { @opts[:dispatch] = :help }
         opts.on("-v", "--version", "Shows version and other info") { @opts[:dispatch] = :info }
