@@ -45,6 +45,11 @@ puts "Filtering in #{@fs.base_dir}"
   node.directory? && node.basename =~ /^[a-z0-9]+$/
 end
 
-@fs.index.reject! do |inode, node|
-  node.basename.include?("readme")
-end
+# Filter by name, for regex see http://rubular.com
+@fs.index.reject! {|inode, node| node.basename =~ /whatever/i }
+
+# Only big files
+@fs.index.select! {|inode, node| node.file? && node.size > 1024 * 1024 * 10 }
+
+# Sort by size
+@fs.index.replace Hash[@fs.index.sort_by{|inode, node| node.size }.reverse]

@@ -63,6 +63,23 @@ Your editor will open with a list of your directory structure which you can edit
     * Copy
     * Delete
 
+
+### Filters
+
+You can easily filter your movies with Ruby. It's not hard, just look at these examples.
+
+```ruby
+# Filter by name, for regex see http://rubular.com
+@fs.index.reject! {|inode, node| node.basename =~ /whatever/i }
+
+# Only big files
+@fs.index.select! {|inode, node| node.file? && node.size > 1024 * 1024 * 10 }
+
+# Sort by size
+@fs.index.replace Hash[@fs.index.sort_by{|inode, node| node.size }.reverse]
+```
+
+
 ## Caveats
 
 DLE relies on inode values, do not use with hardlinks! This may lead to unexpected file operations or data loss!
