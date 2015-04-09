@@ -29,16 +29,26 @@ Note that you need a blocking call to the editor (for GUI editors). Sublime and 
 To get a list of available options invoke DLE with the `--help` or `-h` option:
 
     Usage: dle [options] base_directory
+    # Application options
         -d, --dotfiles                   Include dotfiles (unix invisible)
         -r, --skip-review                Skip review changes before applying
         -s, --simulate                   Don't apply changes, show commands instead
         -f, --file DLFILE                Use input file (be careful)
         -o, --only pattern               files, dirs or regexp (without delimiters)
                                            e.g.: dle ~/Movies -o "(mov|mkv|avi)$"
+        -a, --apply NAMED,FILTERS        Filter collection with saved filters
+        -q, --query                      Filter collection with ruby code
+        -e, --edit FILTER                Edit/create filter scripts
+
+    # General options
         -m, --monochrome                 Don't colorize output
         -h, --help                       Shows this help
         -v, --version                    Shows version and other info
         -z                               Do not check for updates on GitHub (with -v/--version)
+            --console                    Start console to play around with the collection (requires pry)
+
+
+
 
 Change into a directory you want to work with and invoke DLE:
 
